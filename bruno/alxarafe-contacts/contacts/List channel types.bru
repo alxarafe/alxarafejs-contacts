@@ -5,7 +5,15 @@ meta {
 }
 
 get {
-  url: http://{{BASE_URL}}/contacts/channel-types
+  url: {{BASE_URL}}/contacts/channel-types
   body: none
   auth: none
+}
+
+script:post-response {
+  const types = res.body.responseObject?.items || res.body.responseObject || [];
+  const email = types.find((t) => t.name === "EMAIL");
+  if (email) {
+    bru.setVar("emailChannelTypeId", email.id);
+  }
 }

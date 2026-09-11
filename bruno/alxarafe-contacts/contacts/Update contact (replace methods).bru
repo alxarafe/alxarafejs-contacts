@@ -1,11 +1,11 @@
 meta {
   name: Update contact (replace methods)
   type: http
-  seq: 90
+  seq: 110
 }
 
 put {
-  url: http://{{BASE_URL}}/contacts/{{contactId}}
+  url: {{BASE_URL}}/contacts/{{contactId}}
   body: json
   auth: none
 }

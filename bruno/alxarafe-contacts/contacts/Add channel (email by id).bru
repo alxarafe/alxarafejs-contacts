@@ -5,14 +5,14 @@ meta {
 }
 
 post {
-  url: http://{{BASE_URL}}/contacts/{{contactId}}/channels
+  url: {{BASE_URL}}/contacts/{{contactId}}/channels
   body: json
   auth: none
 }
 
 body:json {
   {
-    "channelTypeId": 2,
+    "channelTypeId": {{emailChannelTypeId}},
     "value": "ada@work.example.com",
     "label": "trabajo"
   }
