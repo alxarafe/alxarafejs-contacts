@@ -1,0 +1,35 @@
+{
+	"name": "@alxarafe/contacts",
+	"version": "0.1.0",
+	"description": "Modulo de agenda: contactos, direcciones y canales de contacto",
+	"type": "module",
+	"license": "MIT",
+	"main": "dist/index.js",
+	"types": "dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"scripts": {
+		"build": "tsup src/index.ts --dts --format esm --sourcemap"
+	},
+	"dependencies": {
+		"@alxarafe/core": "workspace:*",
+		"@alxarafe/database": "workspace:*",
+		"@alxarafe/users": "workspace:*",
+		"@asteasolutions/zod-to-openapi": "7.3.4",
+		"express": "5.2.1",
+		"http-status-codes": "2.3.0",
+		"zod": "3.25.76"
+	},
+	"devDependencies": {
+		"@types/express": "5.0.3",
+		"@types/node": "^22.0.0",
+		"tsup": "^8.5.0"
+	}
+}

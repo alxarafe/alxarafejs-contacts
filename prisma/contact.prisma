@@ -1,0 +1,50 @@
+model Contact {
+  id        Int      @id @default(autoincrement())
+  name      String
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  addresses Address[]
+  channels  Channel[]
+
+  @@map("contacts")
+}
+
+model Address {
+  id         Int     @id @default(autoincrement())
+  contactId  Int
+  contact    Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  label      String?
+  street     String
+  city       String
+  state      String?
+  postalCode String?
+  country    String
+
+  @@index([contactId])
+  @@map("addresses")
+}
+
+model ChannelType {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  channels    Channel[]
+
+  @@map("channel_types")
+}
+
+model Channel {
+  id            Int         @id @default(autoincrement())
+  contactId     Int
+  contact       Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  channelTypeId Int
+  channelType   ChannelType @relation(fields: [channelTypeId], references: [id], onDelete: Restrict)
+  value         String
+  label         String?
+
+  @@unique([contactId, channelTypeId, value])
+  @@index([contactId])
+  @@index([channelTypeId])
+  @@map("channels")
+}

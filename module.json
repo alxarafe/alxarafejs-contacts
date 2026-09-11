@@ -1,0 +1,17 @@
+{
+	"name": "contacts",
+	"version": "0.1.0",
+	"description": "Agenda de contactos: personas con direcciones y canales de contacto",
+	"enabledDefault": true,
+	"dependsOn": ["core", "database", "users"],
+	"prisma": {
+		"fragment": "prisma/contact.prisma",
+		"models": ["Contact", "Address", "ChannelType", "Channel"]
+	},
+	"server": {
+		"mountPath": "/contacts",
+		"entry": "dist/index.js",
+		"routerExport": "contactRouter",
+		"registryExport": "contactRegistry"
+	}
+}

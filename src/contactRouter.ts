@@ -1,0 +1,87 @@
+import { createApiResponse, PaginatedListSchema, validateRequest } from "@alxarafe/core";
+import { requireAuth } from "@alxarafe/users";
+import { OpenAPIRegistry } from "@asteasolutions/zod-to-openapi";
+import express, { type Router } from "express";
+import { z } from "zod";
+
+import { contactController } from "./contactController.js";
+import {
+	ContactDetailSchema,
+	ContactSchema,
+	CreateContactSchema,
+	GetContactSchema,
+	UpdateContactSchema,
+} from "./contactModel.js";
+
+export const contactRegistry = new OpenAPIRegistry();
+export const contactRouter: Router = express.Router();
+
+const ContactListQuerySchema = z.object({
+	$top: z.coerce.number().int().positive().max(500).optional(),
+	$skip: z.coerce.number().int().min(0).optional(),
+	$count: z.enum(["true", "false"]).optional(),
+	$filter: z.string().optional(),
+	$orderby: z.string().optional(),
+});
+
+// --- GET /contacts ---
+contactRegistry.register("Contact", ContactSchema);
+
+contactRegistry.registerPath({
+	method: "get",
+	path: "/contacts",
+	tags: ["Contacts"],
+	request: { query: ContactListQuerySchema },
+	responses: createApiResponse(PaginatedListSchema(ContactSchema), "Success"),
+});
+
+contactRouter.get("/", requireAuth, contactController.getContacts);
+
+// --- GET /contacts/:id ---
+contactRegistry.register("ContactDetail", ContactDetailSchema);
+
+contactRegistry.registerPath({
+	method: "get",
+	path: "/contacts/{id}",
+	tags: ["Contacts"],
+	request: { params: GetContactSchema.shape.params },
+	responses: createApiResponse(ContactDetailSchema, "Success"),
+});
+
+contactRouter.get("/:id", requireAuth, validateRequest(GetContactSchema), contactController.getContact);
+
+// --- POST /contacts ---
+contactRegistry.registerPath({
+	method: "post",
+	path: "/contacts",
+	tags: ["Contacts"],
+	request: { body: { content: { "application/json": { schema: CreateContactSchema.shape.body } } } },
+	responses: createApiResponse(ContactSchema, "Created"),
+});
+
+contactRouter.post("/", requireAuth, validateRequest(CreateContactSchema), contactController.createContact);
+
+// --- PUT /contacts/:id ---
+contactRegistry.registerPath({
+	method: "put",
+	path: "/contacts/{id}",
+	tags: ["Contacts"],
+	request: {
+		params: UpdateContactSchema.shape.params,
+		body: { content: { "application/json": { schema: UpdateContactSchema.shape.body } } },
+	},
+	responses: createApiResponse(ContactSchema, "Updated"),
+});
+
+contactRouter.put("/:id", requireAuth, validateRequest(UpdateContactSchema), contactController.updateContact);
+
+// --- DELETE /contacts/:id ---
+contactRegistry.registerPath({
+	method: "delete",
+	path: "/contacts/{id}",
+	tags: ["Contacts"],
+	request: { params: GetContactSchema.shape.params },
+	responses: createApiResponse(z.null(), "Deleted"),
+});
+
+contactRouter.delete("/:id", requireAuth, validateRequest(GetContactSchema), contactController.deleteContact);
