@@ -1,0 +1,11 @@
+meta {
+  name: Remove channel
+  type: http
+  seq: 100
+}
+
+delete {
+  url: http://{{BASE_URL}}/contacts/{{contactId}}/channels/{{channelId}}
+  body: none
+  auth: none
+}

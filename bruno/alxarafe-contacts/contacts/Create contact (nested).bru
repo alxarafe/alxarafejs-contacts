@@ -1,0 +1,38 @@
+meta {
+  name: Create contact (nested)
+  type: http
+  seq: 20
+}
+
+post {
+  url: http://{{BASE_URL}}/contacts
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Ada Lovelace",
+    "notes": "Pionera de la programación",
+    "addresses": [
+      {
+        "label": "casa",
+        "street": "C/ Prisma 1",
+        "city": "Madrid",
+        "state": null,
+        "postalCode": "28001",
+        "country": "ES"
+      }
+    ],
+    "channels": [
+      { "channelTypeName": "EMAIL", "value": "ada@example.com", "label": "personal" },
+      { "channelTypeName": "PHONE", "value": "+34600000000", "label": "móvil" }
+    ]
+  }
+}
+
+script:post-response {
+  if (res.body.responseObject) {
+    bru.setVar("contactId", res.body.responseObject.id);
+  }
+}

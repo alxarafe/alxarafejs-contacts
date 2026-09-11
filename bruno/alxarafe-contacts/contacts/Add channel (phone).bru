@@ -1,0 +1,25 @@
+meta {
+  name: Add channel (phone)
+  type: http
+  seq: 70
+}
+
+post {
+  url: http://{{BASE_URL}}/contacts/{{contactId}}/channels
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "channelTypeName": "PHONE",
+    "value": "+34611111111",
+    "label": "trabajo"
+  }
+}
+
+script:post-response {
+  if (res.body.responseObject) {
+    bru.setVar("channelId", res.body.responseObject.id);
+  }
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Add channel (email by id)
+  type: http
+  seq: 80
+}
+
+post {
+  url: http://{{BASE_URL}}/contacts/{{contactId}}/channels
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "channelTypeId": 2,
+    "value": "ada@work.example.com",
+    "label": "trabajo"
+  }
+}

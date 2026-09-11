@@ -1,0 +1,11 @@
+meta {
+  name: Get contact
+  type: http
+  seq: 40
+}
+
+get {
+  url: http://{{BASE_URL}}/contacts/{{contactId}}
+  body: none
+  auth: none
+}

@@ -1,11 +1,26 @@
 export { contactController } from "./contactController.js";
-export type { Address, Channel, Contact, ContactDetail } from "./contactModel.js";
+export type {
+	Address,
+	AddressInput,
+	Channel,
+	ChannelInput,
+	ChannelTypeRecord,
+	Contact,
+	ContactDetail,
+} from "./contactModel.js";
 export {
+	AddressInputSchema,
 	AddressSchema,
+	ChannelInputSchema,
 	ChannelSchema,
+	ChannelTypeSchema,
 	ContactDetailSchema,
 	ContactSchema,
+	CreateAddressSchema,
+	CreateChannelSchema,
 	CreateContactSchema,
+	DeleteAddressSchema,
+	DeleteChannelSchema,
 	GetContactSchema,
 	UpdateContactSchema,
 } from "./contactModel.js";

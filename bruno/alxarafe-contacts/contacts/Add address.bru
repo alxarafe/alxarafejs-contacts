@@ -1,0 +1,28 @@
+meta {
+  name: Add address
+  type: http
+  seq: 60
+}
+
+post {
+  url: http://{{BASE_URL}}/contacts/{{contactId}}/addresses
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "label": "trabajo",
+    "street": "Av. Node 42",
+    "city": "Barcelona",
+    "state": "Cataluña",
+    "postalCode": "08001",
+    "country": "ES"
+  }
+}
+
+script:post-response {
+  if (res.body.responseObject) {
+    bru.setVar("addressId", res.body.responseObject.id);
+  }
+}

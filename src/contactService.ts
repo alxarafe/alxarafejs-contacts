@@ -3,11 +3,43 @@ import { buildPaginationMeta, logger, parseFilter, ServiceResponse } from "@alxa
 import type { Prisma } from "@alxarafe/database";
 import { StatusCodes } from "http-status-codes";
 
-import type { Contact, ContactDetail, CreateContactInput, UpdateContactInput } from "./contactModel.js";
-import { ContactRepository, type ContactWithDetails } from "./contactRepository.js";
+import type {
+	Address,
+	AddressInput,
+	Channel,
+	ChannelInput,
+	ChannelTypeRecord,
+	Contact,
+	ContactDetail,
+	CreateContactInput,
+	UpdateContactInput,
+} from "./contactModel.js";
+import {
+	type AddressRecord,
+	type ChannelRecord,
+	ContactRepository,
+	type ContactWithDetails,
+} from "./contactRepository.js";
 
 const FILTERABLE_FIELDS = ["id", "name", "notes", "createdAt", "updatedAt"] as const;
 type FilterableField = (typeof FILTERABLE_FIELDS)[number];
+
+class ChannelTypeNotFoundError extends Error {}
+
+function isUniqueConstraintError(ex: unknown): boolean {
+	return (ex as { code?: string })?.code === "P2002";
+}
+
+function toAddressCreate(input: AddressInput): Prisma.AddressCreateWithoutContactInput {
+	return {
+		label: input.label ?? undefined,
+		street: input.street,
+		city: input.city,
+		state: input.state ?? undefined,
+		postalCode: input.postalCode ?? undefined,
+		country: input.country,
+	};
+}
 
 function coerceFilterValue(field: FilterableField, value: FilterValue): unknown {
 	if (value === null) {
@@ -81,6 +113,28 @@ function orderByToPrisma(orderBy: string): Prisma.ContactOrderByWithRelationInpu
 	});
 }
 
+function toAddress(record: AddressRecord): Address {
+	return {
+		id: record.id,
+		label: record.label,
+		street: record.street,
+		city: record.city,
+		state: record.state,
+		postalCode: record.postalCode,
+		country: record.country,
+	};
+}
+
+function toChannel(record: ChannelRecord): Channel {
+	return {
+		id: record.id,
+		channelTypeId: record.channelTypeId,
+		channelTypeName: record.channelType.name,
+		value: record.value,
+		label: record.label,
+	};
+}
+
 function toContact(record: {
 	id: number;
 	name: string;
@@ -100,22 +154,8 @@ function toContact(record: {
 function toContactDetail(record: ContactWithDetails): ContactDetail {
 	return {
 		...toContact(record),
-		addresses: record.addresses.map((a) => ({
-			id: a.id,
-			label: a.label,
-			street: a.street,
-			city: a.city,
-			state: a.state,
-			postalCode: a.postalCode,
-			country: a.country,
-		})),
-		channels: record.channels.map((c) => ({
-			id: c.id,
-			channelTypeId: c.channelTypeId,
-			channelTypeName: c.channelType.name,
-			value: c.value,
-			label: c.label,
-		})),
+		addresses: record.addresses.map(toAddress),
+		channels: record.channels.map(toChannel),
 	};
 }
 
@@ -184,21 +224,27 @@ export class ContactService {
 		}
 	}
 
-	async create(input: CreateContactInput): Promise<ServiceResponse<Contact | null>> {
+	async create(input: CreateContactInput): Promise<ServiceResponse<ContactDetail | null>> {
 		try {
-			const record = await this.contactRepository.createAsync({ name: input.name, notes: input.notes ?? null });
-			return ServiceResponse.success<Contact>("Contact created", toContact(record), StatusCodes.CREATED);
+			const data: Prisma.ContactCreateInput = {
+				name: input.name,
+				notes: input.notes ?? null,
+			};
+			if (input.addresses?.length) {
+				data.addresses = { create: input.addresses.map(toAddressCreate) };
+			}
+			if (input.channels?.length) {
+				const resolved = await this.resolveChannelInputs(input.channels);
+				data.channels = { create: resolved.map((channel) => toChannelCreate(channel)) };
+			}
+			const record = await this.contactRepository.createAsync(data);
+			return ServiceResponse.success<ContactDetail>("Contact created", toContactDetail(record), StatusCodes.CREATED);
 		} catch (ex) {
-			logger.error(`Error creating contact: ${(ex as Error).message}`);
-			return ServiceResponse.failure(
-				"An error occurred while creating contact.",
-				null,
-				StatusCodes.INTERNAL_SERVER_ERROR,
-			);
+			return this.mapServiceError("creating", ex);
 		}
 	}
 
-	async update(id: number, input: UpdateContactInput): Promise<ServiceResponse<Contact | null>> {
+	async update(id: number, input: UpdateContactInput): Promise<ServiceResponse<ContactDetail | null>> {
 		try {
 			const existing = await this.contactRepository.findByIdAsync(id);
 			if (!existing) {
@@ -207,15 +253,17 @@ export class ContactService {
 			const data: Prisma.ContactUpdateInput = {};
 			if (input.name !== undefined) data.name = input.name;
 			if (input.notes !== undefined) data.notes = input.notes;
+			if (input.addresses !== undefined) {
+				data.addresses = { deleteMany: {}, create: input.addresses.map(toAddressCreate) };
+			}
+			if (input.channels !== undefined) {
+				const resolved = await this.resolveChannelInputs(input.channels);
+				data.channels = { deleteMany: {}, create: resolved.map((channel) => toChannelCreate(channel)) };
+			}
 			const record = await this.contactRepository.updateAsync(id, data);
-			return ServiceResponse.success<Contact>("Contact updated", toContact(record));
+			return ServiceResponse.success<ContactDetail>("Contact updated", toContactDetail(record));
 		} catch (ex) {
-			logger.error(`Error updating contact with id ${id}: ${(ex as Error).message}`);
-			return ServiceResponse.failure(
-				"An error occurred while updating contact.",
-				null,
-				StatusCodes.INTERNAL_SERVER_ERROR,
-			);
+			return this.mapServiceError("updating", ex);
 		}
 	}
 
@@ -236,6 +284,137 @@ export class ContactService {
 			);
 		}
 	}
+
+	async addAddress(contactId: number, input: AddressInput): Promise<ServiceResponse<Address | null>> {
+		try {
+			const existing = await this.contactRepository.findByIdAsync(contactId);
+			if (!existing) {
+				return ServiceResponse.failure("Contact not found", null, StatusCodes.NOT_FOUND);
+			}
+			const record = await this.contactRepository.createAddressAsync(contactId, toAddressCreate(input));
+			return ServiceResponse.success<Address>("Address added", toAddress(record), StatusCodes.CREATED);
+		} catch (ex) {
+			return this.mapServiceError("adding address", ex);
+		}
+	}
+
+	async addChannel(contactId: number, input: ChannelInput): Promise<ServiceResponse<Channel | null>> {
+		try {
+			const existing = await this.contactRepository.findByIdAsync(contactId);
+			if (!existing) {
+				return ServiceResponse.failure("Contact not found", null, StatusCodes.NOT_FOUND);
+			}
+			const [resolved] = await this.resolveChannelInputs([input]);
+			const record = await this.contactRepository.createChannelAsync(
+				contactId,
+				resolved.channelTypeId,
+				resolved.value,
+				resolved.label,
+			);
+			return ServiceResponse.success<Channel>("Channel added", toChannel(record), StatusCodes.CREATED);
+		} catch (ex) {
+			return this.mapServiceError("adding channel", ex);
+		}
+	}
+
+	async removeAddress(contactId: number, addressId: number): Promise<ServiceResponse<null>> {
+		try {
+			const deleted = await this.contactRepository.deleteAddressAsync(contactId, addressId);
+			if (!deleted) {
+				return ServiceResponse.failure("Address not found on contact", null, StatusCodes.NOT_FOUND);
+			}
+			return ServiceResponse.success<null>("Address deleted", null);
+		} catch (ex) {
+			logger.error(`Error deleting address ${addressId} from contact ${contactId}: ${(ex as Error).message}`);
+			return ServiceResponse.failure(
+				"An error occurred while deleting address.",
+				null,
+				StatusCodes.INTERNAL_SERVER_ERROR,
+			);
+		}
+	}
+
+	async removeChannel(contactId: number, channelId: number): Promise<ServiceResponse<null>> {
+		try {
+			const deleted = await this.contactRepository.deleteChannelAsync(contactId, channelId);
+			if (!deleted) {
+				return ServiceResponse.failure("Channel not found on contact", null, StatusCodes.NOT_FOUND);
+			}
+			return ServiceResponse.success<null>("Channel deleted", null);
+		} catch (ex) {
+			logger.error(`Error deleting channel ${channelId} from contact ${contactId}: ${(ex as Error).message}`);
+			return ServiceResponse.failure(
+				"An error occurred while deleting channel.",
+				null,
+				StatusCodes.INTERNAL_SERVER_ERROR,
+			);
+		}
+	}
+
+	async listChannelTypes(): Promise<ServiceResponse<ChannelTypeRecord[] | null>> {
+		try {
+			const records = await this.contactRepository.listChannelTypesAsync();
+			return ServiceResponse.success<ChannelTypeRecord[]>("Channel types found", records);
+		} catch (ex) {
+			logger.error(`Error listing channel types: ${(ex as Error).message}`);
+			return ServiceResponse.failure(
+				"An error occurred while retrieving channel types.",
+				null,
+				StatusCodes.INTERNAL_SERVER_ERROR,
+			);
+		}
+	}
+
+	private mapServiceError(operation: string, ex: unknown): ServiceResponse<null> {
+		if (ex instanceof ChannelTypeNotFoundError) {
+			return ServiceResponse.failure(ex.message, null, StatusCodes.BAD_REQUEST);
+		}
+		if (isUniqueConstraintError(ex)) {
+			return ServiceResponse.failure(
+				"A channel with the same type and value already exists for this contact.",
+				null,
+				StatusCodes.CONFLICT,
+			);
+		}
+		logger.error(`Error ${operation}: ${(ex as Error).message}`);
+		return ServiceResponse.failure(
+			`An error occurred while ${operation} contact.`,
+			null,
+			StatusCodes.INTERNAL_SERVER_ERROR,
+		);
+	}
+
+	private async resolveChannelInputs(channels: ChannelInput[]): Promise<ChannelResolved[]> {
+		const resolved: ChannelResolved[] = [];
+		for (const channel of channels) {
+			let channelTypeId = channel.channelTypeId;
+			if (channelTypeId === undefined) {
+				const record = await this.contactRepository.findOrCreateChannelTypeAsync(channel.channelTypeName as string);
+				channelTypeId = record.id;
+			} else {
+				const existing = await this.contactRepository.findChannelTypeByIdAsync(channelTypeId);
+				if (!existing) {
+					throw new ChannelTypeNotFoundError(`Channel type ${channelTypeId} does not exist`);
+				}
+			}
+			resolved.push({ channelTypeId, value: channel.value, label: channel.label ?? null });
+		}
+		return resolved;
+	}
+}
+
+interface ChannelResolved {
+	channelTypeId: number;
+	value: string;
+	label: string | null;
+}
+
+function toChannelCreate(channel: ChannelResolved): Prisma.ChannelCreateWithoutContactInput {
+	return {
+		channelType: { connect: { id: channel.channelTypeId } },
+		value: channel.value,
+		label: channel.label,
+	};
 }
 
 export const contactService = new ContactService();

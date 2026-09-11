@@ -1,0 +1,30 @@
+meta {
+  name: Update contact (replace methods)
+  type: http
+  seq: 90
+}
+
+put {
+  url: http://{{BASE_URL}}/contacts/{{contactId}}
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Ada Augusta King",
+    "addresses": [
+      {
+        "label": "oficina",
+        "street": "C/ Sustituida 7",
+        "city": "Madrid",
+        "state": null,
+        "postalCode": "28002",
+        "country": "ES"
+      }
+    ],
+    "channels": [
+      { "channelTypeName": "EMAIL", "value": "ada.augusta@example.com", "label": "personal" }
+    ]
+  }
+}

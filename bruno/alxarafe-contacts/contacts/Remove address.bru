@@ -1,0 +1,11 @@
+meta {
+  name: Remove address
+  type: http
+  seq: 110
+}
+
+delete {
+  url: http://{{BASE_URL}}/contacts/{{contactId}}/addresses/{{addressId}}
+  body: none
+  auth: none
+}

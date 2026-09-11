@@ -1,0 +1,11 @@
+meta {
+  name: Delete contact
+  type: http
+  seq: 120
+}
+
+delete {
+  url: http://{{BASE_URL}}/contacts/{{contactId}}
+  body: none
+  auth: none
+}

@@ -6,9 +6,18 @@ import { z } from "zod";
 
 import { contactController } from "./contactController.js";
 import {
+	AddressInputSchema,
+	AddressSchema,
+	ChannelInputSchema,
+	ChannelSchema,
+	ChannelTypeSchema,
 	ContactDetailSchema,
 	ContactSchema,
+	CreateAddressSchema,
+	CreateChannelSchema,
 	CreateContactSchema,
+	DeleteAddressSchema,
+	DeleteChannelSchema,
 	GetContactSchema,
 	UpdateContactSchema,
 } from "./contactModel.js";
@@ -37,6 +46,18 @@ contactRegistry.registerPath({
 
 contactRouter.get("/", requireAuth, contactController.getContacts);
 
+// --- GET /contacts/channel-types (before /:id so it is not shadowed) ---
+contactRegistry.register("ChannelType", ChannelTypeSchema);
+
+contactRegistry.registerPath({
+	method: "get",
+	path: "/contacts/channel-types",
+	tags: ["Contacts"],
+	responses: createApiResponse(z.array(ChannelTypeSchema), "Success"),
+});
+
+contactRouter.get("/channel-types", requireAuth, contactController.getChannelTypes);
+
 // --- GET /contacts/:id ---
 contactRegistry.register("ContactDetail", ContactDetailSchema);
 
@@ -56,7 +77,7 @@ contactRegistry.registerPath({
 	path: "/contacts",
 	tags: ["Contacts"],
 	request: { body: { content: { "application/json": { schema: CreateContactSchema.shape.body } } } },
-	responses: createApiResponse(ContactSchema, "Created"),
+	responses: createApiResponse(ContactDetailSchema, "Created", 201),
 });
 
 contactRouter.post("/", requireAuth, validateRequest(CreateContactSchema), contactController.createContact);
@@ -70,7 +91,7 @@ contactRegistry.registerPath({
 		params: UpdateContactSchema.shape.params,
 		body: { content: { "application/json": { schema: UpdateContactSchema.shape.body } } },
 	},
-	responses: createApiResponse(ContactSchema, "Updated"),
+	responses: createApiResponse(ContactDetailSchema, "Updated"),
 });
 
 contactRouter.put("/:id", requireAuth, validateRequest(UpdateContactSchema), contactController.updateContact);
@@ -85,3 +106,63 @@ contactRegistry.registerPath({
 });
 
 contactRouter.delete("/:id", requireAuth, validateRequest(GetContactSchema), contactController.deleteContact);
+
+// --- POST /contacts/:id/addresses ---
+contactRegistry.registerPath({
+	method: "post",
+	path: "/contacts/{id}/addresses",
+	tags: ["Contacts"],
+	request: {
+		params: CreateAddressSchema.shape.params,
+		body: { content: { "application/json": { schema: AddressInputSchema } } },
+	},
+	responses: createApiResponse(AddressSchema, "Created", 201),
+});
+
+contactRouter.post("/:id/addresses", requireAuth, validateRequest(CreateAddressSchema), contactController.addAddress);
+
+// --- DELETE /contacts/:id/addresses/:addressId ---
+contactRegistry.registerPath({
+	method: "delete",
+	path: "/contacts/{id}/addresses/{addressId}",
+	tags: ["Contacts"],
+	request: { params: DeleteAddressSchema.shape.params },
+	responses: createApiResponse(z.null(), "Deleted"),
+});
+
+contactRouter.delete(
+	"/:id/addresses/:addressId",
+	requireAuth,
+	validateRequest(DeleteAddressSchema),
+	contactController.removeAddress,
+);
+
+// --- POST /contacts/:id/channels ---
+contactRegistry.registerPath({
+	method: "post",
+	path: "/contacts/{id}/channels",
+	tags: ["Contacts"],
+	request: {
+		params: CreateChannelSchema.shape.params,
+		body: { content: { "application/json": { schema: ChannelInputSchema } } },
+	},
+	responses: createApiResponse(ChannelSchema, "Created", 201),
+});
+
+contactRouter.post("/:id/channels", requireAuth, validateRequest(CreateChannelSchema), contactController.addChannel);
+
+// --- DELETE /contacts/:id/channels/:channelId ---
+contactRegistry.registerPath({
+	method: "delete",
+	path: "/contacts/{id}/channels/{channelId}",
+	tags: ["Contacts"],
+	request: { params: DeleteChannelSchema.shape.params },
+	responses: createApiResponse(z.null(), "Deleted"),
+});
+
+contactRouter.delete(
+	"/:id/channels/:channelId",
+	requireAuth,
+	validateRequest(DeleteChannelSchema),
+	contactController.removeChannel,
+);
