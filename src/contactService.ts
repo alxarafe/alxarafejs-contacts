@@ -17,8 +17,9 @@ import type {
 import {
 	type AddressRecord,
 	type ChannelRecord,
-	ContactRepository,
+	type ContactRepository,
 	type ContactWithDetails,
+	PrismaContactRepository,
 } from "./contactRepository.js";
 
 const FILTERABLE_FIELDS = ["id", "name", "notes", "createdAt", "updatedAt"] as const;
@@ -162,7 +163,7 @@ function toContactDetail(record: ContactWithDetails): ContactDetail {
 export class ContactService {
 	private contactRepository: ContactRepository;
 
-	constructor(repository: ContactRepository = new ContactRepository()) {
+	constructor(repository: ContactRepository = new PrismaContactRepository()) {
 		this.contactRepository = repository;
 	}
 

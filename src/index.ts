@@ -24,6 +24,7 @@ export {
 	GetContactSchema,
 	UpdateContactSchema,
 } from "./contactModel.js";
-export { ContactRepository } from "./contactRepository.js";
+export type { ContactRepository, ContactWithDetails } from "./contactRepository.js";
+export { PrismaContactRepository } from "./contactRepository.js";
 export { contactRegistry, contactRouter } from "./contactRouter.js";
 export { ContactService, contactService } from "./contactService.js";

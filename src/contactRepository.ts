@@ -64,7 +64,23 @@ export const CONTACT_DETAIL_INCLUDE = {
 	channels: { include: { channelType: true }, orderBy: { id: "asc" } },
 } satisfies Prisma.ContactInclude;
 
-export class ContactRepository {
+export interface ContactRepository {
+	findAllAsync(params?: ContactListParams): Promise<ContactWithAddresses[]>;
+	countAsync(where?: Prisma.ContactWhereInput): Promise<number>;
+	findByIdAsync(id: number): Promise<ContactWithDetails | null>;
+	createAsync(data: Prisma.ContactCreateInput): Promise<ContactWithDetails>;
+	updateAsync(id: number, data: Prisma.ContactUpdateInput): Promise<ContactWithDetails>;
+	deleteAsync(id: number): Promise<void>;
+	createAddressAsync(contactId: number, data: Prisma.AddressCreateWithoutContactInput): Promise<AddressRecord>;
+	createChannelAsync(contactId: number, channelTypeId: number, value: string, label: string | null): Promise<ChannelRecord>;
+	deleteAddressAsync(contactId: number, addressId: number): Promise<boolean>;
+	deleteChannelAsync(contactId: number, channelId: number): Promise<boolean>;
+	findChannelTypeByIdAsync(id: number): Promise<ChannelTypeRecord | null>;
+	findOrCreateChannelTypeAsync(name: string): Promise<ChannelTypeRecord>;
+	listChannelTypesAsync(): Promise<ChannelTypeRecord[]>;
+}
+
+export class PrismaContactRepository implements ContactRepository {
 	async findAllAsync(params?: ContactListParams): Promise<ContactWithAddresses[]> {
 		if (!params) {
 			return prisma.contact.findMany({ include: { addresses: true }, orderBy: { id: "asc" } });
