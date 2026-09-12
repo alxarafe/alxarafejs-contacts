@@ -12,6 +12,7 @@ export interface ContactWithAddresses {
 	id: number;
 	name: string;
 	notes: string | null;
+	isCustomer: boolean;
 	createdAt: Date;
 	updatedAt: Date;
 	addresses: {

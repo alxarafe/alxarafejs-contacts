@@ -22,7 +22,7 @@ import {
 	PrismaContactRepository,
 } from "./contactRepository.js";
 
-const FILTERABLE_FIELDS = ["id", "name", "notes", "createdAt", "updatedAt"] as const;
+const FILTERABLE_FIELDS = ["id", "name", "notes", "isCustomer", "createdAt", "updatedAt"] as const;
 type FilterableField = (typeof FILTERABLE_FIELDS)[number];
 
 class ChannelTypeNotFoundError extends Error {}
@@ -51,6 +51,12 @@ function coerceFilterValue(field: FilterableField, value: FilterValue): unknown 
 	}
 	if (field === "createdAt" || field === "updatedAt") {
 		return new Date(String(value));
+	}
+	if (field === "isCustomer") {
+		if (typeof value === "boolean") {
+			return value;
+		}
+		return String(value).toLowerCase() === "true";
 	}
 	return value;
 }
@@ -140,6 +146,7 @@ function toContact(record: {
 	id: number;
 	name: string;
 	notes: string | null;
+	isCustomer: boolean;
 	createdAt: Date;
 	updatedAt: Date;
 }): Contact {
@@ -147,6 +154,7 @@ function toContact(record: {
 		id: record.id,
 		name: record.name,
 		notes: record.notes,
+		isCustomer: record.isCustomer,
 		createdAt: record.createdAt,
 		updatedAt: record.updatedAt,
 	};
@@ -231,6 +239,7 @@ export class ContactService {
 				name: input.name,
 				notes: input.notes ?? null,
 			};
+			if (input.isCustomer !== undefined) data.isCustomer = input.isCustomer;
 			if (input.addresses?.length) {
 				data.addresses = { create: input.addresses.map(toAddressCreate) };
 			}
@@ -254,6 +263,7 @@ export class ContactService {
 			const data: Prisma.ContactUpdateInput = {};
 			if (input.name !== undefined) data.name = input.name;
 			if (input.notes !== undefined) data.notes = input.notes;
+			if (input.isCustomer !== undefined) data.isCustomer = input.isCustomer;
 			if (input.addresses !== undefined) {
 				data.addresses = { deleteMany: {}, create: input.addresses.map(toAddressCreate) };
 			}

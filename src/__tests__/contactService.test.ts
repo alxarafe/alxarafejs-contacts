@@ -9,6 +9,7 @@ function makeContact(overrides: Partial<ContactWithDetails> = {}): ContactWithDe
 		id: 1,
 		name: "Ada",
 		notes: null,
+		isCustomer: false,
 		createdAt: new Date("2026-01-01T10:00:00.000Z"),
 		updatedAt: new Date("2026-01-01T10:00:00.000Z"),
 		addresses: [],
@@ -133,6 +134,14 @@ describe("ContactService.create", () => {
 		expect(fakeRepo.createAsync).not.toHaveBeenCalled();
 	});
 
+	it("creates a contact marked as customer when isCustomer is true", async () => {
+		fakeRepo.createAsync.mockResolvedValue(makeContact({ isCustomer: true }));
+		const response = await service.create({ name: "Ada", isCustomer: true });
+		expect(fakeRepo.createAsync).toHaveBeenCalledWith({ name: "Ada", notes: null, isCustomer: true });
+		expect(response.statusCode).toBe(StatusCodes.CREATED);
+		expect(response.responseObject?.isCustomer).toBe(true);
+	});
+
 	it("maps a unique constraint violation to 409", async () => {
 		fakeRepo.createAsync.mockRejectedValue({
 			code: "P2002",
@@ -198,6 +207,16 @@ describe("ContactService.update", () => {
 
 		expect(fakeRepo.updateAsync).toHaveBeenCalledWith(1, { name: "New" });
 		expect(response.responseObject?.name).toBe("New");
+	});
+
+	it("updates isCustomer when provided", async () => {
+		fakeRepo.findByIdAsync.mockResolvedValue(contact);
+		fakeRepo.updateAsync.mockResolvedValue({ ...contact, isCustomer: true });
+
+		const response = await service.update(1, { isCustomer: true });
+
+		expect(fakeRepo.updateAsync).toHaveBeenCalledWith(1, { isCustomer: true });
+		expect(response.responseObject?.isCustomer).toBe(true);
 	});
 });
 

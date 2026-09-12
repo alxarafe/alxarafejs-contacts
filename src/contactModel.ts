@@ -11,6 +11,7 @@ export const ContactSchema = z.object({
 	id: z.number(),
 	name: z.string(),
 	notes: z.string().nullable(),
+	isCustomer: z.boolean(),
 	createdAt: z.date(),
 	updatedAt: z.date(),
 });
@@ -78,6 +79,7 @@ export const CreateContactSchema = z.object({
 	body: z.object({
 		name: z.string().min(1).max(255),
 		notes: z.string().nullable().optional(),
+		isCustomer: z.boolean().optional(),
 		addresses: z.array(AddressInputSchema).max(50).optional(),
 		channels: z.array(ChannelInputSchema).max(50).optional(),
 	}),
@@ -88,6 +90,7 @@ export const UpdateContactSchema = z.object({
 	body: z.object({
 		name: z.string().min(1).max(255).optional(),
 		notes: z.string().nullable().optional(),
+		isCustomer: z.boolean().optional(),
 		addresses: z.array(AddressInputSchema).max(50).optional(),
 		channels: z.array(ChannelInputSchema).max(50).optional(),
 	}),

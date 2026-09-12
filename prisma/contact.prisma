@@ -1,11 +1,12 @@
 model Contact {
-  id        Int      @id @default(autoincrement())
-  name      String
-  notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  addresses Address[]
-  channels  Channel[]
+  id         Int      @id @default(autoincrement())
+  name       String
+  notes      String?
+  isCustomer Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  addresses  Address[]
+  channels   Channel[]
 
   @@map("contacts")
 }
