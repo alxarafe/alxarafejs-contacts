@@ -7,6 +7,11 @@ export type {
 	ChannelTypeRecord,
 	Contact,
 	ContactDetail,
+	CvInput,
+	Experience,
+	ExperienceInput,
+	Titulation,
+	TitulationInput,
 } from "./contactModel.js";
 export {
 	AddressInputSchema,
@@ -21,7 +26,12 @@ export {
 	CreateContactSchema,
 	DeleteAddressSchema,
 	DeleteChannelSchema,
+	ExperienceInputSchema,
+	ExperienceSchema,
 	GetContactSchema,
+	ReplaceCvSchema,
+	TitulationInputSchema,
+	TitulationSchema,
 	UpdateContactSchema,
 } from "./contactModel.js";
 export type { ContactRepository, ContactWithDetails } from "./contactRepository.js";

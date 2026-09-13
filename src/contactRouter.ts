@@ -18,7 +18,11 @@ import {
 	CreateContactSchema,
 	DeleteAddressSchema,
 	DeleteChannelSchema,
+	ExperienceInputSchema,
+	ExperienceSchema,
 	GetContactSchema,
+	ReplaceCvSchema,
+	TitulationSchema,
 	UpdateContactSchema,
 } from "./contactModel.js";
 
@@ -166,3 +170,26 @@ contactRouter.delete(
 	validateRequest(DeleteChannelSchema),
 	contactController.removeChannel,
 );
+
+// --- PUT /contacts/:id/cv ---
+// Replaces the whole CV (titulations + experiences) in one batch. A per-line
+// API (POST/DELETE /titulations/:titulationId, same pattern as the address and
+// channel sub-resources) could be added for single-line mutations; see the note
+// in contactModel.ts.
+contactRegistry.register("Titulation", TitulationSchema);
+contactRegistry.register("Experience", ExperienceSchema);
+
+contactRegistry.registerPath({
+	method: "put",
+	path: "/contacts/{id}/cv",
+	tags: ["Contacts"],
+	request: {
+		params: ReplaceCvSchema.shape.params,
+		body: {
+			content: { "application/json": { schema: ReplaceCvSchema.shape.body } },
+		},
+	},
+	responses: createApiResponse(ContactDetailSchema, "Updated"),
+});
+
+contactRouter.put("/:id/cv", requireAuth, validateRequest(ReplaceCvSchema), contactController.replaceCv);

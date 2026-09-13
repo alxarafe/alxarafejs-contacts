@@ -13,5 +13,9 @@
 		"entry": "dist/index.js",
 		"routerExport": "contactRouter",
 		"registryExport": "contactRegistry"
+	},
+	"web": {
+		"mountPath": "/contacts",
+		"entry": "pages/contacts/contacts.ts"
 	}
 }

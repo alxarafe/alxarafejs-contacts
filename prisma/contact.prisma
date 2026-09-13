@@ -1,12 +1,14 @@
 model Contact {
-  id         Int      @id @default(autoincrement())
-  name       String
-  notes      String?
-  isCustomer Boolean  @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  addresses  Address[]
-  channels   Channel[]
+  id          Int           @id @default(autoincrement())
+  name        String
+  notes       String?
+  isCustomer  Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  addresses   Address[]
+  channels    Channel[]
+  titulations Titulation[]
+  experiences Experience[]
 
   @@map("contacts")
 }
@@ -48,4 +50,31 @@ model Channel {
   @@index([contactId])
   @@index([channelTypeId])
   @@map("channels")
+}
+
+model Titulation {
+  id          Int     @id @default(autoincrement())
+  contactId   Int
+  contact     Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  title       String
+  institution String?
+  year        Int?
+  grade       Float?
+
+  @@index([contactId])
+  @@map("titulations")
+}
+
+model Experience {
+  id        Int     @id @default(autoincrement())
+  contactId Int
+  contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  role      String
+  company   String?
+  yearFrom  Int?
+  yearTo    Int?
+  level     Int?
+
+  @@index([contactId])
+  @@map("experiences")
 }

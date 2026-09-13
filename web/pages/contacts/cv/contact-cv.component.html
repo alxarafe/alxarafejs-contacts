@@ -1,0 +1,114 @@
+@if (form(); as form) {
+  <form [formGroup]="form" (ngSubmit)="save()" novalidate class="cv">
+    <fieldset class="cv-section">
+      <legend>Titulaciones</legend>
+      <p class="muted">
+        Media de notas (0–{{ maxGrade }}):
+        <strong>{{ titulationAverage() | number: '1.0-2' }}</strong>
+      </p>
+
+      <div formArrayName="titulations" class="cv-rows">
+        @for (row of titulationRows(); track $index) {
+          <div class="cv-row" [formGroupName]="$index">
+            <label class="grow">
+              Título
+              <input formControlName="title" placeholder="Grado, máster…" />
+              @if (row.get('title')?.invalid && row.get('title')?.touched) {
+                <small class="invalid">El título es obligatorio</small>
+              }
+            </label>
+            <label>
+              Centro
+              <input formControlName="institution" placeholder="Universidad" />
+            </label>
+            <label>
+              Año
+              <input formControlName="year" type="number" min="1900" max="2200" />
+            </label>
+            <label>
+              Nota
+              <input formControlName="grade" type="number" min="0" [max]="maxGrade" step="0.1" />
+              @if (row.get('grade')?.invalid && row.get('grade')?.touched) {
+                <small class="invalid">Entre 0 y {{ maxGrade }}</small>
+              }
+            </label>
+            <button
+              type="button"
+              class="outline danger"
+              aria-label="Quitar titulación"
+              [disabled]="titulationRows().length === 1"
+              (click)="removeTitulation($index)"
+            >
+              Quitar
+            </button>
+          </div>
+        }
+      </div>
+
+      <button type="button" class="outline" (click)="addTitulation()">+ Añadir titulación</button>
+    </fieldset>
+
+    <fieldset class="cv-section">
+      <legend>Experiencia</legend>
+      <p class="muted">
+        Nivel medio (1–{{ maxLevel }}):
+        <strong>{{ experienceAverage() | number: '1.0-2' }}</strong>
+      </p>
+
+      <div formArrayName="experiences" class="cv-rows">
+        @for (row of experienceRows(); track $index) {
+          <div class="cv-row" [formGroupName]="$index">
+            <label class="grow">
+              Rol
+              <input formControlName="role" placeholder="Desarrollador, Jefe de proyecto…" />
+              @if (row.get('role')?.invalid && row.get('role')?.touched) {
+                <small class="invalid">El rol es obligatorio</small>
+              }
+            </label>
+            <label>
+              Empresa
+              <input formControlName="company" placeholder="ACME S.L." />
+            </label>
+            <label>
+              Desde
+              <input formControlName="yearFrom" type="number" min="1900" max="2200" />
+            </label>
+            <label>
+              Hasta
+              <input formControlName="yearTo" type="number" min="1900" max="2200" />
+            </label>
+            <label>
+              Nivel
+              <input formControlName="level" type="number" min="1" [max]="maxLevel" step="1" />
+              @if (row.get('level')?.invalid && row.get('level')?.touched) {
+                <small class="invalid">Entre 1 y {{ maxLevel }}</small>
+              }
+            </label>
+            <button
+              type="button"
+              class="outline danger"
+              aria-label="Quitar experiencia"
+              [disabled]="experienceRows().length === 1"
+              (click)="removeExperience($index)"
+            >
+              Quitar
+            </button>
+          </div>
+        }
+      </div>
+
+      @if (form.errors?.['yearsOrder']) {
+        <p class="invalid">El año de inicio no puede ser posterior al de fin en alguna experiencia</p>
+      }
+
+      <button type="button" class="outline" (click)="addExperience()">+ Añadir experiencia</button>
+    </fieldset>
+
+    <footer class="cv-actions">
+      <button type="button" class="outline" [disabled]="saving()" (click)="cancel()">Cancelar</button>
+      <button type="submit" [disabled]="saving() || form.invalid">
+        {{ saving() ? 'Guardando…' : 'Guardar CV' }}
+      </button>
+    </footer>
+  </form>
+}

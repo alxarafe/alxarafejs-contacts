@@ -34,6 +34,25 @@ export interface ContactWithDetails extends ContactWithAddresses {
 		value: string;
 		label: string | null;
 	}[];
+	titulations: TitulationRecord[];
+	experiences: ExperienceRecord[];
+}
+
+export interface TitulationRecord {
+	id: number;
+	title: string;
+	institution: string | null;
+	year: number | null;
+	grade: number | null;
+}
+
+export interface ExperienceRecord {
+	id: number;
+	role: string;
+	company: string | null;
+	yearFrom: number | null;
+	yearTo: number | null;
+	level: number | null;
 }
 
 export interface AddressRecord {
@@ -63,6 +82,8 @@ export interface ChannelTypeRecord {
 export const CONTACT_DETAIL_INCLUDE = {
 	addresses: { orderBy: { id: "asc" } },
 	channels: { include: { channelType: true }, orderBy: { id: "asc" } },
+	titulations: { orderBy: { id: "asc" } },
+	experiences: { orderBy: { id: "asc" } },
 } satisfies Prisma.ContactInclude;
 
 export interface ContactRepository {

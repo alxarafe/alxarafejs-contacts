@@ -64,6 +64,12 @@ class ContactController {
 		const serviceResponse = await contactService.removeChannel(contactId, channelId);
 		res.status(serviceResponse.statusCode).send(serviceResponse);
 	};
+
+	public replaceCv: RequestHandler = async (req: Request, res: Response) => {
+		const contactId = Number.parseInt(req.params.id as string, 10);
+		const serviceResponse = await contactService.replaceCv(contactId, req.body);
+		res.status(serviceResponse.statusCode).send(serviceResponse);
+	};
 }
 
 export const contactController = new ContactController();

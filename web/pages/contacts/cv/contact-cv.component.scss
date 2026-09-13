@@ -1,0 +1,62 @@
+.cv {
+  display: grid;
+  gap: 1rem;
+}
+
+.cv-section {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 0.5rem 1rem 1rem;
+  margin: 0;
+}
+
+.cv-section legend {
+  color: var(--color-heading);
+  font-weight: 600;
+  padding: 0 0.25rem;
+}
+
+.cv-rows {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.75rem 0;
+}
+
+.cv-row {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 0.7fr 0.7fr 0.7fr auto;
+  gap: 0.5rem;
+  align-items: start;
+  padding: 0.75rem;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius);
+}
+
+.cv-row label {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--color-muted);
+}
+
+.cv-row label.grow {
+  grid-column: span 1;
+}
+
+.cv-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+small.invalid,
+p.invalid {
+  color: var(--color-danger);
+  font-size: 0.8rem;
+}
+
+button.danger {
+  background: transparent;
+  border: 1px solid var(--color-danger);
+  color: var(--color-danger);
+}

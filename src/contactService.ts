@@ -11,7 +11,12 @@ import type {
 	ChannelTypeRecord,
 	Contact,
 	ContactDetail,
+	CvInput,
 	CreateContactInput,
+	Experience,
+	ExperienceInput,
+	Titulation,
+	TitulationInput,
 	UpdateContactInput,
 } from "./contactModel.js";
 import {
@@ -19,7 +24,9 @@ import {
 	type ChannelRecord,
 	type ContactRepository,
 	type ContactWithDetails,
+	type ExperienceRecord,
 	PrismaContactRepository,
+	type TitulationRecord,
 } from "./contactRepository.js";
 
 const FILTERABLE_FIELDS = ["id", "name", "notes", "isCustomer", "createdAt", "updatedAt"] as const;
@@ -142,6 +149,27 @@ function toChannel(record: ChannelRecord): Channel {
 	};
 }
 
+function toTitulation(record: TitulationRecord): Titulation {
+	return {
+		id: record.id,
+		title: record.title,
+		institution: record.institution,
+		year: record.year,
+		grade: record.grade,
+	};
+}
+
+function toExperience(record: ExperienceRecord): Experience {
+	return {
+		id: record.id,
+		role: record.role,
+		company: record.company,
+		yearFrom: record.yearFrom,
+		yearTo: record.yearTo,
+		level: record.level,
+	};
+}
+
 function toContact(record: {
 	id: number;
 	name: string;
@@ -165,6 +193,8 @@ function toContactDetail(record: ContactWithDetails): ContactDetail {
 		...toContact(record),
 		addresses: record.addresses.map(toAddress),
 		channels: record.channels.map(toChannel),
+		titulations: record.titulations.map(toTitulation),
+		experiences: record.experiences.map(toExperience),
 	};
 }
 
@@ -293,6 +323,35 @@ export class ContactService {
 				null,
 				StatusCodes.INTERNAL_SERVER_ERROR,
 			);
+		}
+	}
+
+	/**
+	 * Replaces the whole CV in one call (deleteMany + create, atomic via Prisma
+	 * update). Alternative per-line API (POST/DELETE titulations/experiences,
+	 * like addresses/channels) could be added later for single-line mutations;
+	 * see the note in contactModel.ts and the router.
+	 */
+	async replaceCv(contactId: number, input: CvInput): Promise<ServiceResponse<ContactDetail | null>> {
+		try {
+			const existing = await this.contactRepository.findByIdAsync(contactId);
+			if (!existing) {
+				return ServiceResponse.failure("Contact not found", null, StatusCodes.NOT_FOUND);
+			}
+			const data: Prisma.ContactUpdateInput = {
+				titulations: {
+					deleteMany: {},
+					create: input.titulations.map(toTitulationCreate),
+				},
+				experiences: {
+					deleteMany: {},
+					create: input.experiences.map(toExperienceCreate),
+				},
+			};
+			const record = await this.contactRepository.updateAsync(contactId, data);
+			return ServiceResponse.success<ContactDetail>("CV replaced", toContactDetail(record));
+		} catch (ex) {
+			return this.mapServiceError("replacing CV", ex);
 		}
 	}
 
@@ -425,6 +484,25 @@ function toChannelCreate(channel: ChannelResolved): Prisma.ChannelCreateWithoutC
 		channelType: { connect: { id: channel.channelTypeId } },
 		value: channel.value,
 		label: channel.label,
+	};
+}
+
+function toTitulationCreate(title: TitulationInput): Prisma.TitulationCreateWithoutContactInput {
+	return {
+		title: title.title,
+		institution: title.institution ?? undefined,
+		year: title.year ?? undefined,
+		grade: title.grade ?? undefined,
+	};
+}
+
+function toExperienceCreate(experience: ExperienceInput): Prisma.ExperienceCreateWithoutContactInput {
+	return {
+		role: experience.role,
+		company: experience.company ?? undefined,
+		yearFrom: experience.yearFrom ?? undefined,
+		yearTo: experience.yearTo ?? undefined,
+		level: experience.level ?? undefined,
 	};
 }
 

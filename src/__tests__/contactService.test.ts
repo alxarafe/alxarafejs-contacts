@@ -14,6 +14,8 @@ function makeContact(overrides: Partial<ContactWithDetails> = {}): ContactWithDe
 		updatedAt: new Date("2026-01-01T10:00:00.000Z"),
 		addresses: [],
 		channels: [],
+		titulations: [],
+		experiences: [],
 		...overrides,
 	};
 }
@@ -347,5 +349,69 @@ describe("ContactService.listChannelTypes", () => {
 
 		expect(response.statusCode).toBe(StatusCodes.OK);
 		expect(response.responseObject).toEqual([phoneType, emailType]);
+	});
+});
+
+describe("ContactService.replaceCv", () => {
+	const withCv = makeContact({
+		titulations: [{ id: 31, title: "Ing. Informática", institution: "UPM", year: 2015, grade: 8.5 }],
+		experiences: [{ id: 41, role: "Desarrollador", company: "ACME", yearFrom: 2016, yearTo: 2020, level: 3 }],
+	});
+
+	it("replaces titulations and experiences as a batch", async () => {
+		const fakeRepo = createFakeRepository({ findByIdAsync: vi.fn(async () => contact) });
+		fakeRepo.updateAsync.mockResolvedValue(withCv);
+		const service = new ContactService(fakeRepo as never);
+
+		const response = await service.replaceCv(1, {
+			titulations: [{ title: "Ing. Informática", institution: "UPM", year: 2015, grade: 8.5 }],
+			experiences: [{ role: "Desarrollador", company: "ACME", yearFrom: 2016, yearTo: 2020, level: 3 }],
+		});
+
+		expect(fakeRepo.updateAsync).toHaveBeenCalledWith(1, {
+			titulations: {
+				deleteMany: {},
+				create: [{ title: "Ing. Informática", institution: "UPM", year: 2015, grade: 8.5 }],
+			},
+			experiences: {
+				deleteMany: {},
+				create: [{ role: "Desarrollador", company: "ACME", yearFrom: 2016, yearTo: 2020, level: 3 }],
+			},
+		});
+		expect(response.statusCode).toBe(StatusCodes.OK);
+		expect(response.responseObject?.titulations).toHaveLength(1);
+		expect(response.responseObject?.experiences[0].level).toBe(3);
+	});
+
+	it("maps optional grade/level to undefined so they are cleared when not sent", async () => {
+		const fakeRepo = createFakeRepository({ findByIdAsync: vi.fn(async () => contact) });
+		fakeRepo.updateAsync.mockResolvedValue(withCv);
+		const service = new ContactService(fakeRepo as never);
+
+		await service.replaceCv(1, {
+			titulations: [{ title: "Curso", year: 2020 }],
+			experiences: [{ role: "Rol", company: null, yearTo: 2019, level: null }],
+		});
+
+		expect(fakeRepo.updateAsync).toHaveBeenCalledWith(1, {
+			titulations: {
+				deleteMany: {},
+				create: [{ title: "Curso", institution: undefined, year: 2020, grade: undefined }],
+			},
+			experiences: {
+				deleteMany: {},
+				create: [{ role: "Rol", company: undefined, yearFrom: undefined, yearTo: 2019, level: undefined }],
+			},
+		});
+	});
+
+	it("returns 404 when the contact does not exist", async () => {
+		const fakeRepo = createFakeRepository({ findByIdAsync: vi.fn(async () => null) });
+		const service = new ContactService(fakeRepo as never);
+
+		const response = await service.replaceCv(42, { titulations: [], experiences: [] });
+
+		expect(response.statusCode).toBe(StatusCodes.NOT_FOUND);
+		expect(fakeRepo.updateAsync).not.toHaveBeenCalled();
 	});
 });

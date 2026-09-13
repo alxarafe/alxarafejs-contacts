@@ -31,6 +31,7 @@ const controller = vi.hoisted(() => {
 			removeAddress: handler("removeAddress"),
 			addChannel: handler("addChannel"),
 			removeChannel: handler("removeChannel"),
+			replaceCv: handler("replaceCv"),
 		},
 	};
 });
@@ -106,6 +107,31 @@ describe("Contact API HTTP layer", () => {
 
 	it("DELETE /contacts/:channels/:channelId rejects an invalid channelId", async () => {
 		const response = await request(buildApp()).delete("/contacts/5/channels/not-a-number");
+		expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+	});
+
+	it("PUT /contacts/:id/cv replaces the CV and forwards the body", async () => {
+		const response = await request(buildApp())
+			.put("/contacts/5/cv")
+			.send({
+				titulations: [{ title: "Ing. Informática", institution: "UPM", year: 2015, grade: 8.5 }],
+				experiences: [{ role: "Desarrollador", company: "ACME", yearFrom: 2016, yearTo: 2020, level: 3 }],
+			});
+		expect(response.status).toBe(StatusCodes.OK);
+		expect(response.body.marker).toBe("replaceCv");
+		expect(response.body.params).toEqual({ id: "5" });
+		expect(response.body.body.titulations[0].title).toBe("Ing. Informática");
+	});
+
+	it("PUT /contacts/:id/cv rejects a grade outside 0-10", async () => {
+		const response = await request(buildApp())
+			.put("/contacts/5/cv")
+			.send({ titulations: [{ title: "Curso", grade: 11 }] });
+		expect(response.status).toBe(StatusCodes.BAD_REQUEST);
+	});
+
+	it("PUT /contacts/:id/cv rejects a level outside 1-5", async () => {
+		const response = await request(buildApp()).put("/contacts/5/cv").send({ experiences: [{ role: "R", level: 9 }] });
 		expect(response.status).toBe(StatusCodes.BAD_REQUEST);
 	});
 });

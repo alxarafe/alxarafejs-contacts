@@ -1,0 +1,177 @@
+@if (showForm()) {
+  <app-crud-form [config]="config" [model]="editing()" (saved)="onSaved($event)" (cancel)="onCancel()" />
+} @else if (showDetail()) {
+  @if (detail(); as d) {
+    <section class="detail">
+      <header class="detail-header">
+        <div>
+          <button type="button" class="outline" (click)="closeDetail()">← Volver</button>
+          <h2>{{ d.name }}</h2>
+          <p class="muted">{{ d.isCustomer ? 'Es cliente' : 'No es cliente' }}</p>
+        </div>
+        <div class="detail-actions">
+          <button type="button" class="outline" (click)="editContact(d)">Editar</button>
+          <button type="button" class="outline danger" (click)="deleteContact(d)">Eliminar</button>
+        </div>
+      </header>
+
+      <nav class="tabs" aria-label="Secciones del contacto">
+        @for (tab of tabs; track tab.id) {
+          <button
+            type="button"
+            class="tab"
+            [class.active]="activeTab() === tab.id"
+            (click)="switchTab(tab.id)"
+          >
+            {{ tab.label }}@if (tab.id === 'addresses' && d.addresses.length) {
+              ({{ d.addresses.length }})
+            }@if (tab.id === 'channels' && d.channels.length) {
+              ({{ d.channels.length }})
+            }
+          </button>
+        }
+      </nav>
+
+      @if (detailLoading()) {
+        <p class="muted">Cargando…</p>
+      }
+      @if (error(); as message) {
+        <p class="error" role="alert">{{ message }}</p>
+      }
+
+      @switch (activeTab()) {
+        @case ('data') {
+          <section class="card">
+            <header class="card-header">
+              <h3>Datos</h3>
+            </header>
+            <table>
+              <tbody>
+                <tr><th>ID</th><td>{{ d.id }}</td></tr>
+                <tr><th>Nombre</th><td>{{ d.name }}</td></tr>
+                <tr><th>Notas</th><td>{{ d.notes }}</td></tr>
+                <tr><th>Creado</th><td>{{ d.createdAt }}</td></tr>
+                <tr><th>Actualizado</th><td>{{ d.updatedAt }}</td></tr>
+                <tr><th>Tipo</th><td>{{ d.isCustomer ? 'Cliente' : 'Proveedor / contacto' }}</td></tr>
+              </tbody>
+            </table>
+          </section>
+        }
+
+        @case ('addresses') {
+          <section class="card">
+            <header class="card-header">
+              <h3>Direcciones</h3>
+              <button type="button" class="outline" (click)="addAddressForm.set(!addAddressForm())">
+                {{ addAddressForm() ? 'Cancelar' : 'Añadir dirección' }}
+              </button>
+            </header>
+
+            @if (addAddressForm()) {
+              <app-crud-form [config]="addressConfig" (saved)="saveAddress($event)" (cancel)="addAddressForm.set(false)" />
+            }
+
+            @if (d.addresses.length === 0) {
+              <p class="muted">Sin direcciones</p>
+            } @else {
+              <table>
+                <thead>
+                  <tr>
+                    <th>Etiqueta</th>
+                    <th>Calle</th>
+                    <th>Ciudad</th>
+                    <th>Provincia / Estado</th>
+                    <th>CP</th>
+                    <th>País</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (address of d.addresses; track address.id) {
+                    <tr>
+                      <td>{{ address.label }}</td>
+                      <td>{{ address.street }}</td>
+                      <td>{{ address.city }}</td>
+                      <td>{{ address.state }}</td>
+                      <td>{{ address.postalCode }}</td>
+                      <td>{{ address.country }}</td>
+                      <td class="actions">
+                        <button type="button" class="outline danger" (click)="removeAddress(address.id)">Eliminar</button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </section>
+        }
+
+        @case ('channels') {
+          <section class="card">
+            <header class="card-header">
+              <h3>Medios de comunicación</h3>
+              <button type="button" class="outline" (click)="addChannelForm.set(!addChannelForm())">
+                {{ addChannelForm() ? 'Cancelar' : 'Añadir medio' }}
+              </button>
+            </header>
+
+            @if (addChannelForm()) {
+              <app-crud-form [config]="channelConfig" (saved)="saveChannel($event)" (cancel)="addChannelForm.set(false)" />
+            }
+
+            @if (d.channels.length === 0) {
+              <p class="muted">Sin medios de comunicación</p>
+            } @else {
+              <table>
+                <thead>
+                  <tr>
+                    <th>Tipo</th>
+                    <th>Valor</th>
+                    <th>Etiqueta</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (channel of d.channels; track channel.id) {
+                    <tr>
+                      <td>{{ channel.channelTypeName }}</td>
+                      <td>{{ channel.value }}</td>
+                      <td>{{ channel.label }}</td>
+                      <td class="actions">
+                        <button type="button" class="outline danger" (click)="removeChannel(channel.id)">Eliminar</button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </section>
+        }
+
+        @case ('cv') {
+          <contact-cv
+            [contactId]="d.id"
+            [titulations]="d.titulations"
+            [experiences]="d.experiences"
+            [saving]="cvSaving()"
+            (saved)="saveCv($event)"
+            (cancelled)="cvSaving.set(false)"
+          />
+        }
+      }
+    </section>
+  }
+} @else {
+  <app-crud-list
+    [config]="config"
+    [rows]="rows()"
+    [pagination]="pagination()"
+    [loading]="loading()"
+    [error]="error()"
+    (create)="newContact()"
+    (detail)="viewContact($event)"
+    (edit)="editContact($event)"
+    (delete)="deleteContact($event)"
+    (paged)="loadPage($event)"
+  />
+}
